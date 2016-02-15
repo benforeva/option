@@ -20,6 +20,7 @@ module Option
 
     def tokenize(source)
       tokens = []
+      source = String.new(source)
       unless source.empty?
         tokens, chars, indent_level =
           scan(tokens, trim_program(source), INDENT_INVARIANT)
@@ -28,7 +29,7 @@ module Option
         raise InvariantError,
           "You shouldn't be seeing this message. If you are, it means that "\
           "Lexical Analysis has failed for your program. Please report this "\
-          "error to maintainers."
+          "error to maintainer(s)."
       end
       return tokens
     end
