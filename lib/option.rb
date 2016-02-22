@@ -9,6 +9,7 @@ module Option
     COMMA = ","
     RETURN = "\r"
     NEWLINE = "\n"
+    STRING_LIM = '"'
     NUMERALS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
     EOP = "..eop.."
     SPECIAL_CHARACTERS =[RETURN, NEWLINE, "\t"]
@@ -27,7 +28,7 @@ module Option
       end
       if(indent_level !=INDENT_INVARIANT || !chars.empty?)
         raise InvariantError,
-          "You shouldn't be seeing this message. If you are, it means that "\
+          "You should never see this message. If you are, it means that "\
           "Lexical Analysis has failed for your program. Please report this "\
           "error to maintainer(s)."
       end
@@ -43,12 +44,12 @@ module Option
       if chars.empty?
         [tokens, chars, indent_level]
       else
-        chead = chars.first
+        chead = chars[0]
         if chead == WHITESPACE
           scan(*collect_whitespace(tokens, chars, indent_level))
         elsif DELIMITERS.include? chead
           scan(*collect_delimiters(tokens, chars, indent_level))
-        elsif chead == '"'
+        elsif chead == STRING_LIM
           scan(*collect_string(tokens, chars, indent_level))
         elsif NUMERALS.include? chead
           scan(*collect_number(tokens, chars, indent_level))
@@ -65,38 +66,45 @@ module Option
     end
 
     def collect_symbol(tokens, chars, indent_level)
-      match = ""
-      while !ENDWORD.include? chars[0]
-        match, chars = collect_token_character(match, chars)
-      end
-      [tokens << [:SYMBOL, match], chars, indent_level]
+      sym = chars.take_while{|i| !ENDWORD.include?i}.reduce("", :<<)
+      [tokens << [:SYMBOL, sym], chars.drop(sym.size), indent_level]
     end
 
     def collect_token_character(string, chars)
       string.concat(chars[0])
-      chars = chars.drop(1)
-      [string, chars]
+      [string, chars.drop(1)]
     end
 
     def collect_whitespace(tokens, chars, indent_level)
       whitespace = capture_spaces(chars)
       if !whitespace.empty?
-        tokens << [:WHITESPACE, whitespace.size]
+        tokens << make_apply_token(whitespace)
         chars = chars.drop(whitespace.size)
       end
       [tokens, chars, indent_level]
     end
 
+    def make_apply_token(whitespace)
+      [:APPLY, whitespace.size]
+    end
+
     def collect_string(tokens, chars, indent_level)
-      match = ""
-      if chars[0] = '"'
-        chars = chars.drop(1)
+      collect_string_delimiter(*collect_string_body(*collect_string_delimiter(tokens, chars, indent_level)))
+    end
+
+    def collect_string_body(tokens, chars, indent_level)
+      match = chars.take_while{|i| i != STRING_LIM}.reduce("",:<<)
+      [tokens << [:STRING, match], chars.drop(match.size), indent_level]
+    end
+
+    def collect_string_delimiter(tokens, chars, indent_level)
+      if chars[0] = STRING_LIM
+        rest = chars.drop(STRING_LIM.size)
+        tokens << [:STRING_LIM]
+      else
+        rest = chars
       end
-      while chars[0] != '"'
-        match, chars = collect_token_character(match, chars)
-      end
-      chars.drop(1)
-      [tokens << [:STRING, match], chars.drop(1), indent_level]
+      [tokens, rest, indent_level]
     end
 
     def collect_number(tokens, chars, indent_level)
@@ -114,12 +122,12 @@ module Option
     end
 
     def drop_return(tokens, chars, indent_level)
-      if chars.first == "\r" then chars = chars.drop(1) end
+      if chars[0] == "\r" then chars = chars.drop(1) end
       collect_end_of_program(tokens, chars, indent_level)
     end
 
     def collect_end_of_program(tokens, chars, indent_level)
-      actual = chars.take(EOP.size).collect{|i| String.new(i)}.reduce(:<<)
+      actual = chars.take(EOP.size).collect{|i| i}.reduce("", :<<)
       if actual == EOP
         tokens << [:EOP]
         chars = chars.drop(EOP.size)
@@ -129,7 +137,7 @@ module Option
     end
 
     def collect_indentation(tokens, chars, indent_level)
-      if chars.first == NEWLINE then chars = chars.drop(1) end
+      if chars[0] == NEWLINE then chars = chars.drop(1) end
       following_whitespace = capture_spaces(chars)
       if indent?(following_whitespace, indent_level)
         indent_level = indent_size(following_whitespace, indent_level)
@@ -137,10 +145,14 @@ module Option
       elsif outdent?(following_whitespace, indent_level)
         indent_level = outdent_size(following_whitespace, indent_level)
         tokens << [:OUTDENT, indent_level]
-      elsif aligned?(following_whitespace, chars, indent_level)
-        tokens << [:NEWLINE, following_whitespace.size]
+      elsif aligned?(following_whitespace, indent_level)
+        tokens << make_newline_token(following_whitespace)
       end
         [tokens, chars.drop(following_whitespace.size), indent_level]
+    end
+
+    def make_newline_token(whitespace)
+      [:NEWLINE, whitespace.size]
     end
 
     def capture_spaces(chars)
@@ -190,7 +202,7 @@ module Option
       end
     end
 
-    def aligned?(whitespace_string, chars, indent_count)
+    def aligned?(whitespace_string, indent_count)
       if whitespace? whitespace_string
         space = whitespace_string.size
         lower = 2 * indent_count
@@ -201,11 +213,16 @@ module Option
     end
 
     def collect_delimiters(tokens, chars, indent_level)
-      if chars.first == COMMA
-        tokens << [:COMMA]
-        chars = chars.drop(1)
+      if chars[0] == COMMA
+        whitespace = capture_spaces(chars.drop(1))
+        tokens << make_comma_token(whitespace)
+        chars = chars.drop(1 + whitespace.size)
       end
       [tokens, chars, indent_level]
+    end
+
+    def make_comma_token(whitespace)
+      [:COMMA, whitespace.size]
     end
   end
 end

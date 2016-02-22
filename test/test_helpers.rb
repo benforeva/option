@@ -1,6 +1,7 @@
 module TestHelpers
 
   module TestPrograms
+    extend self
 
     def get_test_program(file_name)
       file = File.expand_path("../../test/test_programs/#{file_name}", __FILE__)
