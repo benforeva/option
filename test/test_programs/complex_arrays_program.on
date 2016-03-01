@@ -1,0 +1,6 @@
+array 234
+      fname "Tinu"
+      lname "Elejogun"
+
+      &sum 5, 34, 27
+string "natural"

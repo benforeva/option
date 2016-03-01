@@ -11,7 +11,10 @@ describe Option::Lexer do
     @empty_program = get_test_program("empty_program")
     @simple_program = get_test_program("simple_program")
     @nested_program = get_test_program("nested_program")
+    @complex_nested_program = get_test_program("complex_nested_program.on")
     @simple_arrays_program = get_test_program("simple_arrays_program")
+    @complex_arrays_program = get_test_program("complex_arrays_program.on")
+    @packages = get_test_program("packages.on")
   end
 
   it "ignores_extraneous characters" do
@@ -85,4 +88,41 @@ describe Option::Lexer do
       [:NUMBER, "32"],
       [:EOP]]
   end
+
+  it "has complex arays" do
+    Option::Lexer.tokenize(@complex_arrays_program).must_equal [
+      [:SYMBOL, "array"],
+      [:APPLY, 1],
+      [:NUMBER, "234"],
+      [:NEWLINE, 6],
+      [:SYMBOL, "fname"],
+      [:APPLY, 1],
+      [:STRING_LIM],
+      [:STRING, "Tinu"],
+      [:STRING_LIM],
+      [:NEWLINE, 6],
+      [:SYMBOL, "lname"],
+      [:APPLY, 1],
+      [:STRING_LIM],
+      [:STRING, "Elejogun"],
+      [:STRING_LIM],
+      [:NEWLINE, 0],
+      [:NEWLINE, 6],
+      [:SYMBOL, "&sum"],
+      [:APPLY, 1],
+      [:NUMBER, "5"],
+      [:COMMA, 1],
+      [:NUMBER, "34"],
+      [:COMMA, 1],
+      [:NUMBER, "27"],
+      [:NEWLINE, 0],
+      [:SYMBOL, "string"],
+      [:APPLY, 1],
+      [:STRING_LIM],
+      [:STRING, "natural"],
+      [:STRING_LIM],
+      [:EOP]
+    ]
+  end
+
 end
