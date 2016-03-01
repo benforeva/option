@@ -6,7 +6,7 @@ require_relative '../lib/option.rb'
 class LexerTest
 
   class IndentTest < MiniTest::Test
-    include Option::Lexer, TestHelpers::LexerHelper
+    include Lexer, TestHelpers::LexerHelper
 
     def test_whitespace_exactly_matches_an_indentation
       indent_count = 0
@@ -49,7 +49,7 @@ class LexerTest
   end
 
   class OutdentTest < MiniTest::Test
-    include Option::Lexer, TestHelpers::LexerHelper
+    include Lexer, TestHelpers::LexerHelper
 
     def test_whitespace_exactly_matches_an_outdentation
       indent_count = 1
