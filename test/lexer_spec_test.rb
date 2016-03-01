@@ -24,6 +24,16 @@ describe Lexer do
       .wont_be_instance_of Lexer::InvariantError
   end
 
+  it "gives list of tokens" do
+    result = Lexer.tokenize(@simple_program)
+    array = result.must_be_instance_of Array
+    pairs = result.all?{|i| (1..2).cover? i.size }
+    first_is_symbol = result.all?{|i| i[0].is_a? Symbol}
+    first_is_uppercase = result.none?{|i| i[0].to_s.upcase!}
+    type_assertions = array && pairs && first_is_symbol && first_is_uppercase
+    type_assertions.must_equal true
+  end
+
   it "simple program" do
     Lexer.tokenize(@simple_program).must_equal [
       [:SYMBOL, 'name'],
